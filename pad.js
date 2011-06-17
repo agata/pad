@@ -39,6 +39,12 @@ $(function() {
                 this.cursor(-1);
             } else if (keyCode == 39) {
                 this.cursor(+1);
+            } else if (keyCode == 38) {
+                this.setCursor(view.prevLinePos());
+                view.updateCursor();
+            } else if (keyCode == 40) {
+                this.setCursor(view.nextLinePos());
+                view.updateCursor();
             }
             // TODO 上下カーソル移動
         }
@@ -58,19 +64,64 @@ $(function() {
             doc.text.split('\n').forEach(function(s, i) {
                 ctx.fillText(s, 0, 12 * (i + 1));
             });
-
-            // draw cursor
+            this.updateCursor();
+            // preの場合
+            //var html = doc.text.substring(0, doc.pos) + '<b style="color:red">I</b>' + doc.text.substring(doc.pos);
+            //$content.html(html);
+        },
+        updateCursor: function() {
+            var cursorPos = this.getCursorPos();
+            var pos = $canvas.position();
+            $input.css({top: (pos.top + cursorPos.y - 1) + 'px', left: (pos.left + cursorPos.x) + 'px'});
+            
+        },
+        getCursorPos: function() {
             var beforeText = doc.text.substring(0, doc.pos);
             var beforeLines = beforeText.split('\n');
             var y = (beforeLines.length  - 1) * 12 + 3;
             var lastLine = beforeLines[beforeLines.length - 1];
             var x = ctx.measureText(lastLine).width;
-            var pos = $canvas.position();
-            $input.css({top: (pos.top + y - 1) + 'px', left: (pos.left + x) + 'px'});
-            
-            // preの場合
-            //var html = doc.text.substring(0, doc.pos) + '<b style="color:red">I</b>' + doc.text.substring(doc.pos);
-            //$content.html(html);
+            return {x: x, y: y};
+        },
+        prevLinePos: function() {
+            var beforeText = doc.text.substring(0, doc.pos);
+            var beforeLines = beforeText.split('\n');
+            var beforeLine = beforeLines.length == 1 ? beforeLines[0] : beforeLines[beforeLines.length - 2];
+            var pos = this.getCursorPos();
+            var x = 0;
+            for (var i = 0; i < beforeLine.length; i++) {
+                var width = ctx.measureText(beforeLine.substring(0, i)).width;
+                if (pos.x <= width) {
+                    break;
+                }
+                x = i;
+            }
+            for (var i = 0; i < beforeLines.length - 2; i++) {
+                x += beforeLines[i].length;
+            }
+            x += beforeLines.length - 1; // カーソル直前のの改行分
+            return x;
+        },
+        nextLinePos: function() {
+            var beforeText = doc.text.substring(0, doc.pos);
+            var beforeLines = beforeText.split('\n');
+            var allLines = doc.text.split('\n');
+            var beforeLine = beforeLines.length == 1 ? beforeLines[0] : beforeLines[beforeLines.length - 2];
+            var nextLine = allLines[beforeLines.length];
+            var pos = this.getCursorPos();
+            var x = 0;
+            for (var i = 0; i < beforeLine.length; i++) {
+                var width = ctx.measureText(nextLine.substring(0, i)).width;
+                if (pos.x <= width) {
+                    break;
+                }
+                x = i;
+            }
+            for (var i = 0; i < beforeLines.length; i++) {
+                x += allLines[i].length;
+            }
+            x += beforeLines.length + 1; // カーソル直前のの改行分
+            return x;
         }
     }
     var im = {
@@ -95,6 +146,7 @@ $(function() {
         console.log('enter=' + enter);
         console.log(e.keyCode);
         if (enter == false || e.keyCode == 13) {
+            $input.hide();
             var completed = $input.text();
             console.log('確定:' + completed);
             if (completed != "") {
@@ -107,6 +159,7 @@ $(function() {
                     doc.keyCode(e.keyCode);
                 }
             }
+            $input.show();
             im.clear();
             enter = false;
         } else {
