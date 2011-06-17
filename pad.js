@@ -46,7 +46,6 @@ $(function() {
                 this.setCursor(view.nextLinePos());
                 view.updateCursor();
             }
-            // TODO 上下カーソル移動
         }
     };
 
@@ -58,11 +57,14 @@ $(function() {
 
     var view = {
         update: function() {
+            console.log(ctx.font);
+            ctx.font = "16px sans-serif";
+            ctx.textBaseline = 'ideographic';
             ctx.fillStyle = "rgb(250, 250, 250)";
             ctx.fillRect(0, 0, $canvas.width(), $canvas.height());
             ctx.fillStyle = "black";
             doc.text.split('\n').forEach(function(s, i) {
-                ctx.fillText(s, 0, 12 * (i + 1));
+                ctx.fillText(s, 0, 16 * (i + 1) + 7);
             });
             this.updateCursor();
             // preの場合
@@ -78,7 +80,7 @@ $(function() {
         getCursorPos: function() {
             var beforeText = doc.text.substring(0, doc.pos);
             var beforeLines = beforeText.split('\n');
-            var y = (beforeLines.length  - 1) * 12 + 3;
+            var y = (beforeLines.length  - 1) * 16 + 3;
             var lastLine = beforeLines[beforeLines.length - 1];
             var x = ctx.measureText(lastLine).width;
             return {x: x, y: y};
@@ -89,8 +91,9 @@ $(function() {
             var beforeLine = beforeLines.length == 1 ? beforeLines[0] : beforeLines[beforeLines.length - 2];
             var pos = this.getCursorPos();
             var x = 0;
+            var width = 0;
             for (var i = 0; i < beforeLine.length; i++) {
-                var width = ctx.measureText(beforeLine.substring(0, i)).width;
+                width = ctx.measureText(beforeLine.substring(0, i)).width;
                 if (pos.x <= width) {
                     break;
                 }
@@ -100,18 +103,26 @@ $(function() {
                 x += beforeLines[i].length;
             }
             x += beforeLines.length - 1; // カーソル直前のの改行分
+            if (width == 0) {
+                x--;
+            }
             return x;
         },
         nextLinePos: function() {
             var beforeText = doc.text.substring(0, doc.pos);
             var beforeLines = beforeText.split('\n');
             var allLines = doc.text.split('\n');
+            if (beforeLines.length == allLines.length) {
+                return doc.pos;
+            }
             var beforeLine = beforeLines.length == 1 ? beforeLines[0] : beforeLines[beforeLines.length - 2];
             var nextLine = allLines[beforeLines.length];
             var pos = this.getCursorPos();
             var x = 0;
+            var width = 0;
             for (var i = 0; i < beforeLine.length; i++) {
-                var width = ctx.measureText(nextLine.substring(0, i)).width;
+                width = ctx.measureText(nextLine.substring(0, i)).width;
+                console.log('width=' + width);
                 if (pos.x <= width) {
                     break;
                 }
@@ -121,6 +132,9 @@ $(function() {
                 x += allLines[i].length;
             }
             x += beforeLines.length + 1; // カーソル直前のの改行分
+            if (width == 0) {
+                x--;
+            }
             return x;
         }
     }
